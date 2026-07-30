@@ -6,23 +6,23 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>WordScribble – Version 0.3</title>
+<title>WordScribble – Version 0.3.1</title>
 <style>body{margin:0;display:grid;place-items:center;min-height:100vh;background:#f4f6fb;color:#182033;font:600 17px system-ui,-apple-system,sans-serif}.box{text-align:center;padding:28px}.dot{font-size:40px;color:#3157d5}</style>
 </head>
-<body><div class="box"><div class="dot">✎</div>WordScribble Version 0.3 wird geladen …</div>
+<body><div class="box"><div class="dot">✎</div>WordScribble Version 0.3.1 wird geladen …</div>
 <script>
 (async()=>{
  const baseUrl='https://cdn.jsdelivr.net/gh/Christian1Binder/wordscribble@774488ef057828c293f9b9c94cdebf7b1d909634/index.html';
- const patchUrl='https://raw.githubusercontent.com/Christian1Binder/wordscribble/5da433dbee6433c972f740212e470947e6b9428a/scribble-patch.js';
+ const patchUrl='https://raw.githubusercontent.com/Christian1Binder/wordscribble/1a2a9af3a5fbd676ff2c922649ff676f415b4312/scribble-patch.js';
  const [baseRes,patchRes]=await Promise.all([
    fetch(baseUrl,{cache:'no-store'}),
-   fetch(patchUrl+'?v=20260730-1406',{cache:'no-store'})
+   fetch(patchUrl+'?v=20260730-1412',{cache:'no-store'})
  ]);
  if(!baseRes.ok)throw new Error('Basisdatei nicht erreichbar: '+baseRes.status);
  if(!patchRes.ok)throw new Error('Kritzeln-Modul nicht erreichbar: '+patchRes.status);
  let html=await baseRes.text();
  const patch=await patchRes.text();
- html=html.replace('<h1>WordScribble</h1>','<h1>WordScribble <small style="font-size:.45em;color:#3157d5">v0.3</small></h1>');
+ html=html.replace('<h1>WordScribble</h1>','<h1>WordScribble <small style="font-size:.45em;color:#3157d5">v0.3.1</small></h1>');
  html=html.replace('</body>','<script>'+patch.replace(/<\/script/gi,'<\\/script')+'<\\/script></body>');
  document.open();document.write(html);document.close();
 })().catch(e=>{document.body.innerHTML='<div class="box"><div class="dot">!</div>WordScribble konnte nicht geladen werden.<br><small>'+String(e.message||e)+'</small></div>'});
