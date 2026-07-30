@@ -3,14 +3,62 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta http-equiv="Pragma" content="no-cache">
-<meta http-equiv="Expires" content="0">
-<title>WordScribble – Version 0.2</title>
-<style>body{margin:0;display:grid;place-items:center;min-height:100vh;background:#f4f6fb;color:#182033;font:600 17px system-ui,-apple-system,sans-serif}.box{text-align:center;padding:28px}.dot{font-size:40px;color:#3157d5}</style>
+<meta http-equiv="Cache-Control" content="no-store">
+<meta name="theme-color" content="#3157d5">
+<title>WordScribble – Start</title>
+<style>
+:root{--bg:#f3f5f9;--card:#fff;--ink:#172033;--muted:#6b7488;--line:#dce1ea;--accent:#3157d5;--soft:#e9eeff;--shadow:0 18px 48px rgba(30,43,76,.10)}
+*{box-sizing:border-box}html,body{margin:0;min-height:100%;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:var(--bg);color:var(--ink)}button{font:inherit}
+body{padding:max(18px,env(safe-area-inset-top)) max(18px,env(safe-area-inset-right)) max(24px,env(safe-area-inset-bottom)) max(18px,env(safe-area-inset-left))}
+.shell{width:min(1180px,100%);margin:auto}.topbar{display:flex;align-items:center;justify-content:space-between;gap:18px;margin-bottom:24px}.brand{display:flex;align-items:center;gap:13px}.logo{width:50px;height:50px;display:grid;place-items:center;border-radius:15px;background:var(--accent);color:#fff;font-size:25px;box-shadow:var(--shadow)}.brand h1{font-size:clamp(1.45rem,3vw,2rem);margin:0}.brand p{margin:3px 0 0;color:var(--muted)}.version{font-size:.78rem;font-weight:800;padding:6px 9px;border-radius:999px;background:var(--soft);color:var(--accent)}
+.hero{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(300px,.75fr);gap:18px}.hero-main,.summary,.panel{background:var(--card);border:1px solid #e4e8f0;border-radius:22px;box-shadow:var(--shadow)}.hero-main{padding:clamp(24px,4vw,42px)}.eyebrow{font-size:.78rem;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);font-weight:800}.hero h2{font-size:clamp(2rem,5vw,3.8rem);line-height:1.03;margin:12px 0 16px;max-width:760px}.hero-main>p{font-size:clamp(1rem,2vw,1.15rem);line-height:1.6;color:var(--muted);margin:0}.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:24px}.chip{border:1px solid var(--line);border-radius:999px;padding:8px 11px;color:#485166;background:#fafbfe;font-size:.86rem;font-weight:650}
+.summary{padding:24px;display:flex;flex-direction:column;justify-content:space-between}.summary h3{margin:0 0 16px;font-size:1.05rem}.summary-row{display:flex;justify-content:space-between;gap:14px;padding:13px 0;border-bottom:1px solid #edf0f5}.summary-row:last-of-type{border-bottom:0}.summary-row span{color:var(--muted)}.summary-row strong{text-align:right}.primary,.continue{width:100%;border-radius:14px;padding:14px 18px;font-weight:800;cursor:pointer;min-height:50px}.primary{border:0;background:var(--accent);color:#fff}.continue{margin-top:10px;border:1px solid var(--line);background:#fff;color:var(--ink);display:none}
+.panel{padding:22px;margin-top:18px}.panel h3{margin:0;font-size:1.15rem}.panel p{margin:4px 0 16px;color:var(--muted);font-size:.9rem}.options{display:grid;gap:12px}.three{grid-template-columns:repeat(3,minmax(0,1fr))}.four{grid-template-columns:repeat(4,minmax(0,1fr))}.option{position:relative;border:1px solid var(--line);background:#fff;border-radius:17px;padding:18px;text-align:left;cursor:pointer;min-height:128px;transition:.16s}.option:hover{border-color:#aeb9d5;transform:translateY(-1px)}.option.active{border-color:var(--accent);background:var(--soft);box-shadow:inset 0 0 0 1px var(--accent)}.name{display:block;font-weight:850;font-size:1rem;margin-bottom:7px}.meta{display:block;color:var(--muted);font-size:.84rem;line-height:1.45}.mark{position:absolute;right:14px;top:14px;width:22px;height:22px;border-radius:50%;border:1px solid var(--line);display:grid;place-items:center;font-size:13px;color:transparent;background:#fff}.option.active .mark{background:var(--accent);border-color:var(--accent);color:#fff}.size-code{font-size:1.65rem;font-weight:850;letter-spacing:-.04em;margin-bottom:8px}.footnote{color:var(--muted);font-size:.8rem;margin-top:14px;line-height:1.5}
+@media(max-width:850px){.hero{grid-template-columns:1fr}.four{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:620px){.topbar{align-items:flex-start;flex-direction:column}.three,.four{grid-template-columns:1fr}.option{min-height:auto}.hero-main,.summary,.panel{border-radius:18px}}
+</style>
 </head>
-<body><div class="box"><div class="dot">✎</div>WordScribble Version 0.2 wird geladen …</div>
+<body>
+<div class="shell">
+<div class="topbar"><div class="brand"><div class="logo">✎</div><div><h1>WordScribble</h1><p>Kreuzworträtsel für Konzentration und Wortschatz</p></div></div><div class="version">v0.6</div></div>
+<section class="hero">
+<div class="hero-main"><div class="eyebrow">Klar denken. Wort für Wort.</div><h2>Ein Rätsel, das zu deiner Zeit und deinem Anspruch passt.</h2><p>Wähle Schwierigkeitsgrad und Rastergröße. Die Handschrift wird direkt mit Apple Kritzeln erkannt – ohne unnötige Ablenkung.</p><div class="chips"><span class="chip">Konzentration</span><span class="chip">Wortschatz</span><span class="chip">Kurze Auszeit</span></div></div>
+<aside class="summary"><div><h3>Deine Auswahl</h3><div class="summary-row"><span>Schwierigkeit</span><strong id="sumDifficulty">Mittel</strong></div><div class="summary-row"><span>Raster</span><strong id="sumSize">11 × 11</strong></div><div class="summary-row"><span>Charakter</span><strong id="sumCharacter">Ausgewogen</strong></div></div><div><button class="primary" id="startBtn">Rätsel starten</button><button class="continue" id="continueBtn">Gespeichertes Rätsel fortsetzen</button></div></aside>
+</section>
+<section class="panel"><h3>Schwierigkeitsgrad</h3><p>Bestimmt Wortlängen und die Direktheit der Hinweise.</p><div class="options three">
+<button class="option" data-difficulty="easy"><span class="mark">✓</span><span class="name">Leicht</span><span class="meta">Kurze, vertraute Wörter und eindeutige Hinweise.</span></button>
+<button class="option active" data-difficulty="medium"><span class="mark">✓</span><span class="name">Mittel</span><span class="meta">Gemischte Wortlängen und etwas mehr Denkarbeit.</span></button>
+<button class="option" data-difficulty="hard"><span class="mark">✓</span><span class="name">Anspruchsvoll</span><span class="meta">Längere Wörter und weniger direkte Umschreibungen.</span></button>
+</div></section>
+<section class="panel"><h3>Rastergröße</h3><p>Bestimmt, wie umfangreich das Rätsel wird.</p><div class="options four">
+<button class="option" data-size="9"><span class="mark">✓</span><div class="size-code">9 × 9</div><span class="name">Kompakt</span><span class="meta">Für eine kurze Runde.</span></button>
+<button class="option active" data-size="11"><span class="mark">✓</span><div class="size-code">11 × 11</div><span class="name">Standard</span><span class="meta">Ausgewogen und übersichtlich.</span></button>
+<button class="option" data-size="13"><span class="mark">✓</span><div class="size-code">13 × 13</div><span class="name">Groß</span><span class="meta">Mehr Wörter und Kreuzungen.</span></button>
+<button class="option" data-size="15"><span class="mark">✓</span><div class="size-code">15 × 15</div><span class="name">Ausdauer</span><span class="meta">Für eine längere Denkrunde.</span></button>
+</div><div class="footnote">Die Wortauswahl wird automatisch an die Rastergröße angepasst. Begonnene Kombinationen bleiben getrennt gespeichert.</div></section>
+</div>
 <script>
-location.replace('./v2.html?v=20260730-1402');
+(()=>{
+const labels={easy:{name:'Leicht',character:'Direkt und ruhig'},medium:{name:'Mittel',character:'Ausgewogen'},hard:{name:'Anspruchsvoll',character:'Kniffliger'}};
+let config={difficulty:'medium',size:11};
+try{const saved=JSON.parse(localStorage.getItem('wordscribble-dashboard-v1'));if(saved&&labels[saved.difficulty]&&[9,11,13,15].includes(saved.size))config=saved}catch{}
+const continueBtn=document.getElementById('continueBtn');
+const stateKey=()=>`wordscribble-state-v1-${config.difficulty}-${config.size}`;
+function refresh(){
+document.querySelectorAll('[data-difficulty]').forEach(b=>b.classList.toggle('active',b.dataset.difficulty===config.difficulty));
+document.querySelectorAll('[data-size]').forEach(b=>b.classList.toggle('active',+b.dataset.size===config.size));
+document.getElementById('sumDifficulty').textContent=labels[config.difficulty].name;
+document.getElementById('sumSize').textContent=`${config.size} × ${config.size}`;
+document.getElementById('sumCharacter').textContent=labels[config.difficulty].character;
+continueBtn.style.display=localStorage.getItem(stateKey())?'block':'none';
+localStorage.setItem('wordscribble-dashboard-v1',JSON.stringify(config));
+}
+document.querySelectorAll('[data-difficulty]').forEach(b=>b.onclick=()=>{config.difficulty=b.dataset.difficulty;refresh()});
+document.querySelectorAll('[data-size]').forEach(b=>b.onclick=()=>{config.size=+b.dataset.size;refresh()});
+function openGame(isNew){location.href=`./play.html?difficulty=${config.difficulty}&size=${config.size}&new=${isNew?1:0}`}
+document.getElementById('startBtn').onclick=()=>openGame(true);
+continueBtn.onclick=()=>openGame(false);
+refresh();
+})();
 </script>
-</body></html>
+</body>
+</html>
