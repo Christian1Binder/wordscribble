@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<title>WordScribble – Version 0.2</title>
+<style>body{margin:0;display:grid;place-items:center;min-height:100vh;background:#f4f6fb;color:#182033;font:600 17px system-ui,-apple-system,sans-serif}.box{text-align:center;padding:28px}.dot{font-size:40px;color:#3157d5}</style>
+</head>
+<body><div class="box"><div class="dot">✎</div>WordScribble Version 0.2 wird geladen …</div>
+<script>
+(async()=>{
+ const base='https://cdn.jsdelivr.net/gh/Christian1Binder/wordscribble@774488ef057828c293f9b9c94cdebf7b1d909634/index.html';
+ const r=await fetch(base,{cache:'no-store'});
+ if(!r.ok)throw new Error('Basisdatei nicht erreichbar: '+r.status);
+ let html=await r.text();
+ html=html.replace('</body>','<script src="./scribble-patch.js?v=20260730-1402"><\\/script></body>');
+ html=html.replace('<h1>WordScribble</h1>','<h1>WordScribble <small style="font-size:.45em;color:#3157d5">v0.2</small></h1>');
+ document.open();document.write(html);document.close();
+})().catch(e=>{document.body.innerHTML='<div class="box"><div class="dot">!</div>WordScribble konnte nicht geladen werden.<br><small>'+String(e.message||e)+'</small></div>'});
+</script>
+</body></html>
