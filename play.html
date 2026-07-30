@@ -27,24 +27,47 @@ iframe{border:0;width:100%;height:100%;display:block}
 
  const source=h.match(/const WORDS=(\[[\s\S]*?\]);\s*const N=13/);
  if(!source)throw new Error('Wortliste konnte nicht gelesen werden.');
- const all=(new Function('return '+source[1]))();
- const max=Math.max(4,size-1);
- let pool=all.filter(([word])=>{
-   const n=word.length;
-   if(n>max)return false;
-   if(difficulty==='easy')return n<=5;
-   if(difficulty==='hard')return n>=6;
-   return n>=4&&n<=7;
- });
- if(pool.length<12)pool=all.filter(([word])=>word.length<=max);
+ const bankResponse=await fetch('./words-'+difficulty+'.json?v=8',{cache:'no-store'});
+ if(!bankResponse.ok)throw new Error('Wortliste konnte nicht geladen werden: '+bankResponse.status);
+ const all=await bankResponse.json(),max=Math.max(4,size-1),pool=all.filter(([word])=>word.length<=max);
+ if(pool.length<30)throw new Error('Für diese Rastergröße sind zu wenige Wörter vorhanden.');
  h=h.replace(source[0],'const WORDS='+JSON.stringify(pool)+'; const N='+size);
+ const upgradedGenerator=`function generatePuzzle(){
+ const target=Math.max(4,Math.min(8,Math.round(N*.55))),maxWords=Math.min(16,Math.max(8,Math.round(N*1.05)));
+ let winner=null,winnerScore=-Infinity;
+ for(let attempt=0;attempt<12;attempt++){
+  const candidates=WORDS.map(([word,clue])=>({word,clue,key:Math.random()})).sort((a,b)=>(Math.abs(a.word.length-target)+a.key*1.7)-(Math.abs(b.word.length-target)+b.key*1.7)).slice(0,Math.min(70,WORDS.length));
+  if(!candidates.length)continue;
+  const g=emptyGrid(),entries=[],first=candidates.shift(),fr=Math.floor(N/2),fc=Math.floor((N-first.word.length)/2);
+  entries.push(place(g,first,fr,fc,'across',0));
+  while(candidates.length&&entries.length<maxWords){
+   let globalBest=null;
+   for(let idx=0;idx<Math.min(36,candidates.length);idx++){
+    const obj=candidates[idx];let localBest=null;
+    for(const e of entries)for(let a=0;a<obj.word.length;a++)for(let b=0;b<e.word.length;b++)if(obj.word[a]===e.word[b]){
+     const cross=e.cells[b],dir=e.dir==='across'?'down':'across',r=cross.r-(dir==='down'?a:0),c=cross.c-(dir==='across'?a:0),crosses=canPlace(g,obj.word,r,c,dir);
+     if(crosses){const centerPenalty=Math.abs(r-N/2)+Math.abs(c-N/2),score=crosses*100-centerPenalty-obj.word.length*.1+Math.random()*2;if(!localBest||score>localBest.score)localBest={r,c,dir,score}}
+    }
+    if(localBest){const choiceScore=localBest.score+Math.random()*12;if(!globalBest||choiceScore>globalBest.choiceScore)globalBest={idx,choiceScore,...localBest}}
+   }
+   if(!globalBest)break;
+   const obj=candidates.splice(globalBest.idx,1)[0];entries.push(place(g,obj,globalBest.r,globalBest.c,globalBest.dir,entries.length));
+  }
+  const cells=entries.flatMap(e=>e.cells),rows=cells.map(x=>x.r),cols=cells.map(x=>x.c),area=(Math.max(...rows)-Math.min(...rows)+1)*(Math.max(...cols)-Math.min(...cols)+1),score=entries.length*1000-area;
+  if(score>winnerScore){winnerScore=score;winner={grid:g,entries}}
+ }
+ const g=winner.grid,entries=winner.entries,starts=new Map();entries.forEach(e=>starts.set(e.row+','+e.col,true));let num=1;
+ for(let r=0;r<N;r++)for(let c=0;c<N;c++)if(starts.has(r+','+c)){for(const e of entries)if(e.row===r&&e.col===c)e.number=num;num++}
+ return{grid:g,entries,values:{},checked:false,id:Date.now()}}
+ `;
+ h=h.replace(/function generatePuzzle\(\)\{[\s\S]*?return\{grid:g,entries,values:\{\},checked:false,id:Date\.now\(\)\}\}/,upgradedGenerator.trim());
 
  const stateKey='wordscribble-state-v1-'+difficulty+'-'+size;
  if(forceNew)localStorage.removeItem(stateKey);
  h=h.replace("const stateKey='wordscribble-state-v1'","const stateKey='"+stateKey+"'");
  h=h.replace('<strong id="puzzleTitle">Testrätsel</strong>','<strong id="puzzleTitle">'+names[difficulty]+' · '+size+' × '+size+'</strong>');
  h=h.replace('<div class="toolbar"><button class="btn" id="newBtn">','<div class="toolbar"><button class="btn" id="homeBtn">Startseite</button><button class="btn" id="newBtn">');
- h=h.replace('<h1>WordScribble</h1>','<h1>WordScribble <small style="font-size:.45em;color:#3157d5">v0.7</small></h1>');
+ h=h.replace('<h1>WordScribble</h1>','<h1>WordScribble <small style="font-size:.45em;color:#3157d5">v0.8</small></h1>');
 
  const css=`<style>
  @media(max-width:650px){.toolbar{grid-template-columns:repeat(4,1fr)!important}}
@@ -71,7 +94,7 @@ iframe{border:0;width:100%;height:100%;display:block}
  sb.onclick=()=>mode(true);db.onclick=()=>mode(false);
  function clean(v){return (v||'').normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').toUpperCase().replace(/Ä/g,'A').replace(/Ö/g,'O').replace(/Ü/g,'U').replace(/ß/g,'SS').replace(/[^A-Z]/g,'')}
  let t,composing=false;
- function commit(){clearTimeout(t);if(composing)return;const letters=clean(input.value);if(!letters)return;input.value='';state.textContent=letters+' übernommen';for(const l of letters)window.dispatchEvent(new KeyboardEvent('keydown',{key:l,code:'Key'+l,bubbles:true,cancelable:true}));setTimeout(()=>{state.textContent='Apple Kritzeln';input.focus({preventScroll:true})},900)}
+ function commit(){clearTimeout(t);if(composing)return;const letters=clean(input.value);if(!letters)return;input.value='';state.textContent=letters.length>1?letters+' übernommen':letters+' übernommen';for(const l of letters)window.dispatchEvent(new KeyboardEvent('keydown',{key:l,code:'Key'+l,bubbles:true,cancelable:true}));setTimeout(()=>{state.textContent='Apple Kritzeln';input.focus({preventScroll:true})},900)}
  function schedule(){clearTimeout(t);const letters=clean(input.value);state.textContent=letters?'Erkannt: '+letters:'Apple Kritzeln';if(letters)t=setTimeout(commit,850)}
  input.addEventListener('compositionstart',()=>{composing=true;clearTimeout(t);state.textContent='Schrift wird erkannt …'});
  input.addEventListener('compositionend',()=>{composing=false;schedule()});
