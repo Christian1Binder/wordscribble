@@ -1,1 +1,55 @@
-PLACEHOLDER
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta http-equiv="Cache-Control" content="no-store">
+<title>WordScribble v0.5</title>
+<style>html,body{margin:0;width:100%;height:100%;background:#f4f6fb;font-family:system-ui,-apple-system,sans-serif}#status{position:fixed;inset:0;display:grid;place-items:center;color:#182033;font-weight:700}iframe{border:0;width:100%;height:100%;display:block}</style>
+</head>
+<body>
+<div id="status">✎ WordScribble v0.5 wird geladen …</div>
+<script>
+(async()=>{
+ const base='https://cdn.jsdelivr.net/gh/Christian1Binder/wordscribble@774488ef057828c293f9b9c94cdebf7b1d909634/index.html';
+ const r=await fetch(base,{cache:'no-store'});
+ if(!r.ok)throw new Error('Basisdatei nicht erreichbar: '+r.status);
+ let h=await r.text();
+ const css=`<style>
+ .ws-switch{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:5px;background:#eef1f7;border-radius:13px;margin-bottom:12px}
+ .ws-mode{border:0;border-radius:9px;min-height:42px;background:transparent;color:#677089;font:750 16px system-ui}
+ .ws-mode.active{background:#fff;color:#3157d5;box-shadow:0 2px 9px rgba(28,39,70,.1)}
+ .ws-scribble[hidden],.ws-old[hidden]{display:none!important}
+ .ws-box{border:2px solid #3157d5;border-radius:16px;background:#fff;min-height:220px;display:grid;place-items:center;padding:16px}
+ .ws-box:focus-within{box-shadow:0 0 0 4px rgba(49,87,213,.14)}
+ #wsInput{width:100%;height:170px;border:0;outline:0;background:transparent;text-align:center;text-transform:uppercase;font-size:92px;font-weight:760;letter-spacing:.08em;color:#182033;caret-color:#3157d5;padding:10px}
+ #wsInput::placeholder{font-size:20px;font-weight:600;letter-spacing:0;text-transform:none;color:#a0a7b5}
+ .ws-help{margin:10px 2px 0;color:#677089;font-size:14px;line-height:1.4}
+ </style>`;
+ const js=`<script>(()=>{
+ const card=document.querySelector('.entry-panel .panel-body');
+ const target=document.getElementById('entryTarget');
+ const canvas=document.getElementById('canvasWrap');
+ const actions=canvas&&canvas.nextElementSibling;
+ const recognition=document.getElementById('recognitionBox');
+ const note=recognition&&recognition.nextElementSibling;
+ if(!card||!target||!canvas||!actions||!recognition){document.body.insertAdjacentHTML('afterbegin','<div style="padding:12px;background:#fee;color:#900">Apple-Kritzeln-Modul konnte die Eingabefläche nicht finden.</div>');return;}
+ const sw=document.createElement('div');sw.className='ws-switch';sw.innerHTML='<button class="ws-mode active" id="wsS">Apple Kritzeln</button><button class="ws-mode" id="wsD">Zeichnen (alt)</button>';
+ const sp=document.createElement('div');sp.className='ws-scribble';sp.innerHTML='<div class="ws-box"><input id="wsInput" type="text" inputmode="text" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false" maxlength="4" placeholder="Hier mit dem Apple Pencil schreiben"></div><p class="ws-help"><strong>Apple Kritzeln:</strong> In den iPad-Einstellungen unter „Apple Pencil“ aktivieren und jeweils einen Großbuchstaben schreiben.</p>';
+ const old=document.createElement('div');old.className='ws-old';old.hidden=true;
+ canvas.before(sw,sp,old);old.append(canvas,actions,recognition);if(note)old.append(note);
+ const input=document.getElementById('wsInput'),sb=document.getElementById('wsS'),db=document.getElementById('wsD');
+ function mode(s){sp.hidden=!s;old.hidden=s;sb.classList.toggle('active',s);db.classList.toggle('active',!s);if(s)setTimeout(()=>input.focus({preventScroll:true}),60)}
+ sb.onclick=()=>mode(true);db.onclick=()=>mode(false);
+ let t;function send(){clearTimeout(t);t=setTimeout(()=>{const a=input.value.normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').toUpperCase().match(/[A-Z]/g);if(!a||!a.length)return;const l=a[a.length-1];input.value='';document.dispatchEvent(new KeyboardEvent('keydown',{key:l,code:'Key'+l,bubbles:true,cancelable:true}));setTimeout(()=>input.focus({preventScroll:true}),80)},120)}
+ input.addEventListener('input',send);input.addEventListener('compositionend',send);mode(true);
+})();<\/script>`;
+ h=h.replace('</head>',css+'</head>');
+ h=h.replace('<h1>WordScribble</h1>','<h1>WordScribble <small style="font-size:.45em;color:#3157d5">v0.5</small></h1>');
+ h=h.replace('</body>',js+'</body>');
+ const f=document.createElement('iframe');f.title='WordScribble v0.5';f.srcdoc=h;
+ document.getElementById('status').remove();document.body.appendChild(f);
+})().catch(e=>{document.getElementById('status').innerHTML='Fehler beim Laden:<br><small>'+String(e.message||e)+'</small>'});
+</script>
+</body>
+</html>
