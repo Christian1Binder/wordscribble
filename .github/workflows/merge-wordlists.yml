@@ -4,6 +4,7 @@ on:
   push:
     paths:
       - "words-*-extra*.json"
+      - "tools/words-*-extra.json.gz.b64"
       - "tools/merge_wordlists.py"
   workflow_dispatch:
 
