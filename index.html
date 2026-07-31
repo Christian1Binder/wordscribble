@@ -19,9 +19,9 @@ body{padding:max(18px,env(safe-area-inset-top)) max(18px,env(safe-area-inset-rig
 </head>
 <body>
 <div class="shell">
-<div class="topbar"><div class="brand"><div class="logo">✎</div><div><h1>WordScribble</h1><p>Kreuzworträtsel für Konzentration und Wortschatz</p></div></div><div class="version">v0.8</div></div>
+<div class="topbar"><div class="brand"><div class="logo">✎</div><div><h1>WordScribble</h1><p>Vollflächige Schwedenrätsel mit Apple Pencil</p></div></div><div class="version">v0.9</div></div>
 <section class="hero">
-<div class="hero-main"><div class="eyebrow">Klar denken. Wort für Wort.</div><h2>Ein Rätsel, das zu deiner Zeit und deinem Anspruch passt.</h2><p>Wähle Schwierigkeitsgrad und Rastergröße. Die Handschrift wird direkt mit Apple Kritzeln erkannt – ohne unnötige Ablenkung.</p><div class="chips"><span class="chip">462 Begriffe</span><span class="chip">Konzentration</span><span class="chip">Wortschatz</span><span class="chip">Kurze Auszeit</span></div></div>
+<div class="hero-main"><div class="eyebrow">Klar denken. Wort für Wort.</div><h2>Ein Rätsel, das zu deiner Zeit und deinem Anspruch passt.</h2><p>Wähle Schwierigkeitsgrad und Rastergröße. Das gesamte Raster wird mit Lösungs- und Fragefeldern gefüllt; die Handschrift wird direkt mit Apple Kritzeln erkannt.</p><div class="chips"><span class="chip">462 Begriffe</span><span class="chip">100 % belegtes Raster</span><span class="chip">Wortschatz</span><span class="chip">Apple Pencil</span></div></div>
 <aside class="summary"><div><h3>Deine Auswahl</h3><div class="summary-row"><span>Schwierigkeit</span><strong id="sumDifficulty">Mittel</strong></div><div class="summary-row"><span>Raster</span><strong id="sumSize">11 × 11</strong></div><div class="summary-row"><span>Charakter</span><strong id="sumCharacter">Ausgewogen</strong></div></div><div><button class="primary" id="startBtn">Rätsel starten</button><button class="continue" id="continueBtn">Gespeichertes Rätsel fortsetzen</button></div></aside>
 </section>
 <section class="panel"><h3>Schwierigkeitsgrad</h3><p>Bestimmt Wortlängen und die Direktheit der Hinweise.</p><div class="options three">
@@ -34,7 +34,7 @@ body{padding:max(18px,env(safe-area-inset-top)) max(18px,env(safe-area-inset-rig
 <button class="option active" data-size="11"><span class="mark">✓</span><div class="size-code">11 × 11</div><span class="name">Standard</span><span class="meta">Ausgewogen und übersichtlich.</span></button>
 <button class="option" data-size="13"><span class="mark">✓</span><div class="size-code">13 × 13</div><span class="name">Groß</span><span class="meta">Mehr Wörter und Kreuzungen.</span></button>
 <button class="option" data-size="15"><span class="mark">✓</span><div class="size-code">15 × 15</div><span class="name">Ausdauer</span><span class="meta">Für eine längere Denkrunde.</span></button>
-</div><div class="footnote">Die Wortauswahl wird automatisch an die Rastergröße angepasst. Begonnene Kombinationen bleiben getrennt gespeichert.</div></section>
+</div><div class="footnote">Die Wortauswahl und die eingebauten Fragefelder werden automatisch an die Rastergröße angepasst. Begonnene Kombinationen bleiben getrennt gespeichert.</div></section>
 </div>
 <script>
 (()=>{
@@ -42,7 +42,7 @@ const labels={easy:{name:'Leicht',character:'Direkt und ruhig'},medium:{name:'Mi
 let config={difficulty:'medium',size:11};
 try{const saved=JSON.parse(localStorage.getItem('wordscribble-dashboard-v1'));if(saved&&labels[saved.difficulty]&&[9,11,13,15].includes(saved.size))config=saved}catch{}
 const continueBtn=document.getElementById('continueBtn');
-const stateKey=()=>`wordscribble-state-v1-${config.difficulty}-${config.size}`;
+const stateKey=()=>`wordscribble-swedish-v09-${config.difficulty}-${config.size}`;
 function refresh(){
 document.querySelectorAll('[data-difficulty]').forEach(b=>b.classList.toggle('active',b.dataset.difficulty===config.difficulty));
 document.querySelectorAll('[data-size]').forEach(b=>b.classList.toggle('active',+b.dataset.size===config.size));
