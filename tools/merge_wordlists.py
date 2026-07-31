@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
-"""Merge supplemental WordScribble word lists into the three runtime JSON files."""
+"""Merge supplemental WordScribble word lists into the three runtime JSON files.
+
+The runtime game files are the only output consumed by WordScribble; gameplay code
+and user-facing behaviour remain untouched.
+"""
 
 from __future__ import annotations
 
