@@ -77,9 +77,22 @@ def merge_level(level: str) -> tuple[int, int]:
 
 
 def main() -> None:
+    counts: dict[str, int] = {}
     for level in LEVELS:
         before, after = merge_level(level)
+        counts[level] = after
         print(f"{level}: {before} -> {after}")
+
+    stats = {
+        "easy": counts["easy"],
+        "medium": counts["medium"],
+        "hard": counts["hard"],
+        "total": sum(counts.values()),
+    }
+    (ROOT / "wordlist-stats.json").write_text(
+        json.dumps(stats, ensure_ascii=False, indent=2) + "\n",
+        encoding="utf-8",
+    )
 
 
 if __name__ == "__main__":
