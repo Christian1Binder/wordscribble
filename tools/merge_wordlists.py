@@ -80,6 +80,17 @@ def merge_level(level: str) -> tuple[int, int]:
     return before, len(merged)
 
 
+def update_displayed_count(total: int) -> None:
+    path = ROOT / "index.html"
+    if not path.exists():
+        return
+    content = path.read_text(encoding="utf-8")
+    label = f"{total:,}".replace(",", ".") + " Begriffe"
+    updated = re.sub(r"\d{1,4}(?:\.\d{3})? Begriffe", label, content, count=1)
+    if updated != content:
+        path.write_text(updated, encoding="utf-8")
+
+
 def main() -> None:
     counts: dict[str, int] = {}
     for level in LEVELS:
@@ -97,6 +108,7 @@ def main() -> None:
         json.dumps(stats, ensure_ascii=False, indent=2) + "\n",
         encoding="utf-8",
     )
+    update_displayed_count(stats["total"])
 
 
 if __name__ == "__main__":
