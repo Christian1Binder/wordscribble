@@ -6,12 +6,12 @@
 <meta http-equiv="Cache-Control" content="no-store">
 <meta name="theme-color" content="#3157d5">
 <title>WordScribble – Schwedenrätsel</title>
-<link rel="stylesheet" href="./play-v10.css?v=10">
+<link rel="stylesheet" href="./play-v10.css?v=101">
 </head>
 <body>
 <div class="app">
 <header>
- <div class="brand"><div class="logo">✎</div><div><h1>WordScribble <span class="version">v0.10</span></h1><div class="sub">Schwedenrätsel mit Apple Pencil</div></div></div>
+ <div class="brand"><div class="logo">✎</div><div><h1>WordScribble <span class="version">v0.10.1</span></h1><div class="sub">Schwedenrätsel mit Apple Pencil</div></div></div>
  <div class="toolbar"><button class="btn" id="homeBtn">Startseite</button><button class="btn" id="newBtn">Neues Rätsel</button><button class="btn" id="clearBtn">Leeren</button><button class="btn primary" id="checkBtn">Prüfen</button></div>
 </header>
 <main class="layout">
@@ -30,7 +30,7 @@
   </section>
   <section class="card info-card">
    <div class="section-title"><h2>Vernetztes Raster</h2><span class="badge" id="densityBadge">Kreuzungen</span></div>
-   <p>Waagerechte und senkrechte Begriffe überschneiden sich deutlich häufiger. Dadurch geben bereits gelöste Wörter Buchstaben für schwierigere Begriffe vor.</p>
+   <p>Waagerechte und senkrechte Begriffe überschneiden sich häufiger. Dadurch geben bereits gelöste Wörter Buchstaben für schwierigere Begriffe vor.</p>
    <div id="resultBanner" class="result-banner" hidden></div>
    <div class="legend"><span><i class="swatch clue"></i>Frage</span><span><i class="swatch"></i>Lösung</span><span><i class="swatch word"></i>Aktuelles Wort</span></div>
   </section>
@@ -39,6 +39,29 @@
 </div>
 <div class="toast" id="toast"></div>
 <div class="modal" id="winModal"><div class="modal-box"><h2>Alles richtig 🎉</h2><p>Das Schwedenrätsel ist vollständig und fehlerfrei gelöst.</p><div class="modal-actions"><button class="btn" id="closeWin">Schließen</button><button class="btn primary" id="newAfterWin">Neues Rätsel</button></div></div></div>
-<script src="./play-v10.js?v=10"></script>
+<script>
+(async()=>{
+ const status=document.getElementById('status');
+ try{
+  status.textContent='Schnelles vernetztes Raster wird vorbereitet …';
+  const response=await fetch('./play-v10.js?v=101',{cache:'no-store'});
+  if(!response.ok)throw new Error('Programmlogik konnte nicht geladen werden: '+response.status);
+  let source=await response.text();
+  source=source.replace("stateKey=`wordscribble-swedish-v010-${difficulty}-${N}`","stateKey=`wordscribble-swedish-v0101-${difficulty}-${N}`");
+  source=source.replace("const desired=Math.max(5,Math.round(N*.9));","const desired=Math.max(3,Math.min(5,Math.round(N*.42)));");
+  source=source.replace("for(let target=desired;target>=Math.max(3,Math.round(N*.5));target--)","for(let target=desired;target>=Math.max(2,desired-1);target--)");
+  source=source.replace("const attempts=N>=15?18:24;","const attempts=N>=15?4:5;");
+  source=source.replace("solveLayout(layout,vertical,byLen,N>=15?1450:1050)","solveLayout(layout,vertical,byLen,N>=15?170:140)");
+  source=source.replace("steps>90000","steps>6500");
+  source=source.replace("if(crossingRate>=.42&&vertical.length>=target-1)return winner;","if(crossingRate>=.22&&vertical.length>=Math.max(2,target-1))return winner;");
+  source=source.replace("if(winner&&winner.crossings>=Math.round(N*1.8))break;","if(winner&&winner.crossings>=Math.round(N*.8))break;");
+  source=source.replace("puzzle=saved&&saved.cells&&saved.entries&&typeof saved.crossings==='number'?saved:generatePuzzle();","if(!saved)$('#status').textContent='Wörter werden passend gekreuzt …'; await new Promise(r=>setTimeout(r,40)); puzzle=saved&&saved.cells&&saved.entries&&typeof saved.crossings==='number'?saved:generatePuzzle();");
+  (0,eval)(source);
+ }catch(error){
+  status.textContent='Fehler: '+(error.message||error);
+  console.error(error);
+ }
+})();
+</script>
 </body>
 </html>
