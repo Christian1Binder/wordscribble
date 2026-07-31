@@ -3,6 +3,8 @@
 
 from __future__ import annotations
 
+import base64
+import gzip
 import json
 import re
 from pathlib import Path
@@ -17,11 +19,10 @@ def normalize(word: object) -> str:
     return re.sub(r"[^A-Z]", "", text)
 
 
-def read_entries(path: Path) -> list[list[str]]:
-    if not path.exists():
-        return []
-    data = json.loads(path.read_text(encoding="utf-8"))
+def normalize_entries(data: object) -> list[list[str]]:
     entries: list[list[str]] = []
+    if not isinstance(data, list):
+        return entries
     for item in data:
         if not isinstance(item, list) or len(item) < 2:
             continue
@@ -30,6 +31,21 @@ def read_entries(path: Path) -> list[list[str]]:
         if 3 <= len(word) <= 14 and clue:
             entries.append([word, clue])
     return entries
+
+
+def read_entries(path: Path) -> list[list[str]]:
+    if not path.exists():
+        return []
+    return normalize_entries(json.loads(path.read_text(encoding="utf-8")))
+
+
+def read_compressed_entries(level: str) -> list[list[str]]:
+    path = ROOT / "tools" / f"words-{level}-extra.json.gz.b64"
+    if not path.exists():
+        return []
+    encoded = "".join(path.read_text(encoding="ascii").split())
+    raw = gzip.decompress(base64.b64decode(encoded)).decode("utf-8")
+    return normalize_entries(json.loads(raw))
 
 
 def merge_level(level: str) -> tuple[int, int]:
@@ -44,6 +60,12 @@ def merge_level(level: str) -> tuple[int, int]:
                 continue
             seen.add(word)
             merged.append([word, clue])
+
+    for word, clue in read_compressed_entries(level):
+        if word in seen:
+            continue
+        seen.add(word)
+        merged.append([word, clue])
 
     merged.sort(key=lambda item: (len(item[0]), item[0]))
     before = len(read_entries(destination))
