@@ -1,0 +1,40 @@
+name: Merge Word Lists
+
+on:
+  push:
+    paths:
+      - "words-*-extra*.json"
+      - "tools/merge_wordlists.py"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  merge:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Merge supplemental lists
+        run: python tools/merge_wordlists.py
+
+      - name: Commit merged runtime lists
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add words-easy.json words-medium.json words-hard.json
+          if git diff --cached --quiet; then
+            echo "No word-list changes to commit."
+          else
+            git commit -m "Expand crossword word lists"
+            git push
+          fi
