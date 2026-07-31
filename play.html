@@ -2,114 +2,20 @@
 <html lang="de">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
 <meta http-equiv="Cache-Control" content="no-store">
-<title>WordScribble</title>
-<style>
-html,body{margin:0;width:100%;height:100%;background:#f4f6fb;font-family:system-ui,-apple-system,sans-serif}
-#status{position:fixed;inset:0;display:grid;place-items:center;color:#182033;font-weight:700;text-align:center;padding:20px}
-iframe{border:0;width:100%;height:100%;display:block}
-</style>
+<meta name="theme-color" content="#3157d5">
+<title>WordScribble – Schwedenrätsel</title>
+<link rel="stylesheet" href="./play-v09.css?v=9">
 </head>
 <body>
-<div id="status">✎ WordScribble wird vorbereitet …</div>
-<script>
-(async()=>{
- const q=new URLSearchParams(location.search);
- const difficulty=['easy','medium','hard'].includes(q.get('difficulty'))?q.get('difficulty'):'medium';
- const size=[9,11,13,15].includes(Number(q.get('size')))?Number(q.get('size')):11;
- const forceNew=q.get('new')==='1';
- const names={easy:'Leicht',medium:'Mittel',hard:'Anspruchsvoll'};
- const base='https://cdn.jsdelivr.net/gh/Christian1Binder/wordscribble@774488ef057828c293f9b9c94cdebf7b1d909634/index.html';
- const r=await fetch(base,{cache:'no-store'});
- if(!r.ok)throw new Error('Basisdatei nicht erreichbar: '+r.status);
- let h=await r.text();
-
- const source=h.match(/const WORDS=(\[[\s\S]*?\]);\s*const N=13/);
- if(!source)throw new Error('Wortliste konnte nicht gelesen werden.');
- const bankResponse=await fetch('./words-'+difficulty+'.json?v=8',{cache:'no-store'});
- if(!bankResponse.ok)throw new Error('Wortliste konnte nicht geladen werden: '+bankResponse.status);
- const all=await bankResponse.json(),max=Math.max(4,size-1),pool=all.filter(([word])=>word.length<=max);
- if(pool.length<30)throw new Error('Für diese Rastergröße sind zu wenige Wörter vorhanden.');
- h=h.replace(source[0],'const WORDS='+JSON.stringify(pool)+'; const N='+size);
- const upgradedGenerator=`function generatePuzzle(){
- const target=Math.max(4,Math.min(8,Math.round(N*.55))),maxWords=Math.min(16,Math.max(8,Math.round(N*1.05)));
- let winner=null,winnerScore=-Infinity;
- for(let attempt=0;attempt<12;attempt++){
-  const candidates=WORDS.map(([word,clue])=>({word,clue,key:Math.random()})).sort((a,b)=>(Math.abs(a.word.length-target)+a.key*1.7)-(Math.abs(b.word.length-target)+b.key*1.7)).slice(0,Math.min(70,WORDS.length));
-  if(!candidates.length)continue;
-  const g=emptyGrid(),entries=[],first=candidates.shift(),fr=Math.floor(N/2),fc=Math.floor((N-first.word.length)/2);
-  entries.push(place(g,first,fr,fc,'across',0));
-  while(candidates.length&&entries.length<maxWords){
-   let globalBest=null;
-   for(let idx=0;idx<Math.min(36,candidates.length);idx++){
-    const obj=candidates[idx];let localBest=null;
-    for(const e of entries)for(let a=0;a<obj.word.length;a++)for(let b=0;b<e.word.length;b++)if(obj.word[a]===e.word[b]){
-     const cross=e.cells[b],dir=e.dir==='across'?'down':'across',r=cross.r-(dir==='down'?a:0),c=cross.c-(dir==='across'?a:0),crosses=canPlace(g,obj.word,r,c,dir);
-     if(crosses){const centerPenalty=Math.abs(r-N/2)+Math.abs(c-N/2),score=crosses*100-centerPenalty-obj.word.length*.1+Math.random()*2;if(!localBest||score>localBest.score)localBest={r,c,dir,score}}
-    }
-    if(localBest){const choiceScore=localBest.score+Math.random()*12;if(!globalBest||choiceScore>globalBest.choiceScore)globalBest={idx,choiceScore,...localBest}}
-   }
-   if(!globalBest)break;
-   const obj=candidates.splice(globalBest.idx,1)[0];entries.push(place(g,obj,globalBest.r,globalBest.c,globalBest.dir,entries.length));
-  }
-  const cells=entries.flatMap(e=>e.cells),rows=cells.map(x=>x.r),cols=cells.map(x=>x.c),area=(Math.max(...rows)-Math.min(...rows)+1)*(Math.max(...cols)-Math.min(...cols)+1),score=entries.length*1000-area;
-  if(score>winnerScore){winnerScore=score;winner={grid:g,entries}}
- }
- const g=winner.grid,entries=winner.entries,starts=new Map();entries.forEach(e=>starts.set(e.row+','+e.col,true));let num=1;
- for(let r=0;r<N;r++)for(let c=0;c<N;c++)if(starts.has(r+','+c)){for(const e of entries)if(e.row===r&&e.col===c)e.number=num;num++}
- return{grid:g,entries,values:{},checked:false,id:Date.now()}}
- `;
- h=h.replace(/function generatePuzzle\(\)\{[\s\S]*?return\{grid:g,entries,values:\{\},checked:false,id:Date\.now\(\)\}\}/,upgradedGenerator.trim());
-
- const stateKey='wordscribble-state-v1-'+difficulty+'-'+size;
- if(forceNew)localStorage.removeItem(stateKey);
- h=h.replace("const stateKey='wordscribble-state-v1'","const stateKey='"+stateKey+"'");
- h=h.replace('<strong id="puzzleTitle">Testrätsel</strong>','<strong id="puzzleTitle">'+names[difficulty]+' · '+size+' × '+size+'</strong>');
- h=h.replace('<div class="toolbar"><button class="btn" id="newBtn">','<div class="toolbar"><button class="btn" id="homeBtn">Startseite</button><button class="btn" id="newBtn">');
- h=h.replace('<h1>WordScribble</h1>','<h1>WordScribble <small style="font-size:.45em;color:#3157d5">v0.8</small></h1>');
-
- const css=`<style>
- @media(max-width:650px){.toolbar{grid-template-columns:repeat(4,1fr)!important}}
- .ws-switch{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:5px;background:#eef1f7;border-radius:13px;margin-bottom:12px}
- .ws-mode{border:0;border-radius:9px;min-height:42px;background:transparent;color:#677089;font:750 16px system-ui}
- .ws-mode.active{background:#fff;color:#3157d5;box-shadow:0 2px 9px rgba(28,39,70,.1)}
- .ws-scribble[hidden],.ws-old[hidden]{display:none!important}
- .ws-box{border:2px solid #3157d5;border-radius:16px;background:#fff;min-height:220px;display:grid;place-items:center;padding:16px;position:relative}
- .ws-box:focus-within{box-shadow:0 0 0 4px rgba(49,87,213,.14)}
- #wsInput{width:100%;height:170px;border:0;outline:0;background:transparent;text-align:center;text-transform:uppercase;font-size:clamp(48px,9vw,82px);font-weight:760;letter-spacing:.05em;color:#182033;padding:10px;resize:none;font-family:system-ui,-apple-system,sans-serif}
- #wsInput::placeholder{font-size:18px;font-weight:600;letter-spacing:0;text-transform:none;color:#a0a7b5}
- .ws-help{margin:10px 2px 0;color:#677089;font-size:14px;line-height:1.45}
- .ws-help strong{color:#3157d5}.ws-state{position:absolute;right:10px;top:9px;border-radius:999px;background:#e9eeff;color:#3157d5;padding:4px 8px;font-size:12px;font-weight:800}
- </style>`;
-
- const js=`<script>(()=>{
- const card=document.querySelector('.write-card'),target=document.getElementById('currentClue'),canvas=document.getElementById('canvasWrap'),actions=document.querySelector('.write-actions'),recognition=document.querySelector('.recognition');
- if(!card||!target||!canvas||!actions||!recognition)return;
- const sw=document.createElement('div');sw.className='ws-switch';sw.innerHTML='<button class="ws-mode active" id="wsS" type="button">Wort schreiben</button><button class="ws-mode" id="wsD" type="button">Zeichnen (alt)</button>';
- const sp=document.createElement('div');sp.className='ws-scribble';sp.innerHTML='<div class="ws-box"><span class="ws-state" id="wsState">Apple Kritzeln</span><textarea id="wsInput" rows="1" inputmode="text" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false" placeholder="Ganzes Lösungswort schreiben"></textarea></div><p class="ws-help"><strong>Deutlich zuverlässiger:</strong> Schreibe möglichst das ganze Lösungswort statt einzelner Buchstaben. Apple erkennt zusammenhängende Wörter besser; WordScribble trägt anschließend alle erkannten Buchstaben nacheinander ein. Ein einzelner Buchstabe funktioniert weiterhin.</p>';
- const old=document.createElement('div');old.className='ws-old';old.hidden=true;target.after(sw,sp,old);old.append(canvas,actions,recognition);
- const input=document.getElementById('wsInput'),state=document.getElementById('wsState'),sb=document.getElementById('wsS'),db=document.getElementById('wsD');
- function mode(s){sp.hidden=!s;old.hidden=s;sb.classList.toggle('active',s);db.classList.toggle('active',!s);if(s)setTimeout(()=>input.focus({preventScroll:true}),60)}
- sb.onclick=()=>mode(true);db.onclick=()=>mode(false);
- function clean(v){return (v||'').normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').toUpperCase().replace(/Ä/g,'A').replace(/Ö/g,'O').replace(/Ü/g,'U').replace(/ß/g,'SS').replace(/[^A-Z]/g,'')}
- let t,composing=false;
- function commit(){clearTimeout(t);if(composing)return;const letters=clean(input.value);if(!letters)return;input.value='';state.textContent=letters.length>1?letters+' übernommen':letters+' übernommen';for(const l of letters)window.dispatchEvent(new KeyboardEvent('keydown',{key:l,code:'Key'+l,bubbles:true,cancelable:true}));setTimeout(()=>{state.textContent='Apple Kritzeln';input.focus({preventScroll:true})},900)}
- function schedule(){clearTimeout(t);const letters=clean(input.value);state.textContent=letters?'Erkannt: '+letters:'Apple Kritzeln';if(letters)t=setTimeout(commit,850)}
- input.addEventListener('compositionstart',()=>{composing=true;clearTimeout(t);state.textContent='Schrift wird erkannt …'});
- input.addEventListener('compositionend',()=>{composing=false;schedule()});
- input.addEventListener('input',()=>{if(!composing)schedule()});
- input.addEventListener('change',commit);
- input.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();commit()}});
- document.getElementById('homeBtn')?.addEventListener('click',()=>parent.location.href='./index.html');
- mode(true);
- })();<\/script>`;
-
- h=h.replace('</head>',css+'</head>');
- h=h.replace('</body>',js+'</body>');
- const f=document.createElement('iframe');f.title='WordScribble';f.srcdoc=h;
- document.getElementById('status').remove();document.body.appendChild(f);
-})().catch(e=>{document.getElementById('status').innerHTML='Fehler beim Laden:<br><small>'+String(e.message||e)+'</small>'});
-</script>
+<div class="app">
+<header><div class="brand"><div class="logo">✎</div><div><h1>WordScribble <span class="version">v0.9</span></h1><div class="sub">Schwedenrätsel mit Apple Pencil</div></div></div><div class="toolbar"><button class="btn" id="homeBtn">Startseite</button><button class="btn" id="newBtn">Neues Rätsel</button><button class="btn" id="clearBtn">Leeren</button><button class="btn primary" id="checkBtn">Prüfen</button></div></header>
+<main class="layout">
+<section class="card puzzle-card"><div class="puzzle-head"><div><strong id="title">Rätsel wird erzeugt …</strong><div class="status" id="status">Wortlisten werden geladen.</div></div><div><div class="progress"><span id="progressBar"></span></div><div class="status" id="progressText">0 %</div></div></div><div class="grid-scroll"><div class="grid" id="grid" aria-label="Schwedenrätsel"></div></div></section>
+<aside class="side"><section class="card input-card"><div class="section-title"><h2>Lösung eingeben</h2><span class="badge" id="directionBadge">→ Waagerecht</span></div><div class="current" id="currentClue">Wähle im Raster ein Frage- oder Buchstabenfeld.</div><div class="scribble"><span class="recognition-state" id="recognitionState">Apple Kritzeln</span><textarea id="wordInput" rows="1" inputmode="text" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false" placeholder="Ganzes Lösungswort schreiben"></textarea></div><div class="help">Mit dem Apple Pencil das ganze Wort schreiben. Alternativ einzelne Buchstaben über Tastatur oder Bildschirmtasten eingeben.</div><div class="keyboard" id="keyboard"></div><div class="actions"><button class="btn" id="eraseWord">Wort löschen</button><button class="btn" id="nextWord">Nächste Frage</button></div></section><section class="card info-card"><div class="section-title"><h2>Vollflächiges Raster</h2><span class="badge" id="densityBadge">100 % belegt</span></div><p>Jedes Feld ist jetzt entweder ein Lösungsfeld oder ein eingebautes Fragefeld. Fragefelder können eine waagerechte und zusätzlich eine senkrechte Frage enthalten.</p><div class="legend"><span><i class="swatch clue"></i>Frage</span><span><i class="swatch"></i>Lösung</span><span><i class="swatch word"></i>Aktuelles Wort</span></div></section></aside>
+</main></div>
+<div class="toast" id="toast"></div><div class="modal" id="winModal"><div class="modal-box"><h2>Rätsel gelöst 🎉</h2><p>Alle eingetragenen Buchstaben sind richtig.</p><div class="modal-actions"><button class="btn" id="closeWin">Schließen</button><button class="btn primary" id="newAfterWin">Neues Rätsel</button></div></div></div>
+<script src="./play-v09.js?v=9"></script>
 </body>
 </html>
