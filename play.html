@@ -6,30 +6,39 @@
 <meta http-equiv="Cache-Control" content="no-store">
 <meta name="theme-color" content="#3157d5">
 <title>WordScribble – Schwedenrätsel</title>
-<link rel="stylesheet" href="./play-v09.css?v=10">
+<link rel="stylesheet" href="./play-v10.css?v=10">
 </head>
 <body>
 <div class="app">
-<header><div class="brand"><div class="logo">✎</div><div><h1>WordScribble <span class="version">v0.9.1</span></h1><div class="sub">Schwedenrätsel mit Apple Pencil</div></div></div><div class="toolbar"><button class="btn" id="homeBtn">Startseite</button><button class="btn" id="newBtn">Neues Rätsel</button><button class="btn" id="clearBtn">Leeren</button><button class="btn primary" id="checkBtn">Prüfen</button></div></header>
+<header>
+ <div class="brand"><div class="logo">✎</div><div><h1>WordScribble <span class="version">v0.10</span></h1><div class="sub">Schwedenrätsel mit Apple Pencil</div></div></div>
+ <div class="toolbar"><button class="btn" id="homeBtn">Startseite</button><button class="btn" id="newBtn">Neues Rätsel</button><button class="btn" id="clearBtn">Leeren</button><button class="btn primary" id="checkBtn">Prüfen</button></div>
+</header>
 <main class="layout">
-<section class="card puzzle-card"><div class="puzzle-head"><div><strong id="title">Rätsel wird erzeugt …</strong><div class="status" id="status">Wortlisten werden geladen.</div></div><div><div class="progress"><span id="progressBar"></span></div><div class="status" id="progressText">0 %</div></div></div><div class="grid-scroll"><div class="grid" id="grid" aria-label="Schwedenrätsel"></div></div></section>
-<aside class="side"><section class="card input-card"><div class="section-title"><h2>Lösung eingeben</h2><span class="badge" id="directionBadge">→ Waagerecht</span></div><div class="current" id="currentClue">Wähle im Raster ein Frage- oder Buchstabenfeld.</div><div class="scribble"><span class="recognition-state" id="recognitionState">Apple Kritzeln</span><textarea id="wordInput" rows="1" inputmode="text" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false" placeholder="Ganzes Lösungswort schreiben"></textarea></div><div class="help">Mit dem Apple Pencil das ganze Wort schreiben. Alternativ einzelne Buchstaben über Tastatur oder Bildschirmtasten eingeben.</div><div class="keyboard" id="keyboard"></div><div class="actions"><button class="btn" id="eraseWord">Wort löschen</button><button class="btn" id="nextWord">Nächste Frage</button></div></section><section class="card info-card"><div class="section-title"><h2>Vollflächiges Raster</h2><span class="badge" id="densityBadge">100 % belegt</span></div><p>Jedes Feld ist entweder ein Lösungsfeld oder ein eingebautes Fragefeld. Fragefelder können eine waagerechte und zusätzlich eine senkrechte Frage enthalten.</p><div class="legend"><span><i class="swatch clue"></i>Frage</span><span><i class="swatch"></i>Lösung</span><span><i class="swatch word"></i>Aktuelles Wort</span></div></section></aside>
-</main></div>
-<div class="toast" id="toast"></div><div class="modal" id="winModal"><div class="modal-box"><h2>Rätsel gelöst 🎉</h2><p>Alle eingetragenen Buchstaben sind richtig.</p><div class="modal-actions"><button class="btn" id="closeWin">Schließen</button><button class="btn primary" id="newAfterWin">Neues Rätsel</button></div></div></div>
-<script>
-(async()=>{
- try{
-  const response=await fetch('./play-v09.js?v=10',{cache:'no-store'});
-  if(!response.ok)throw new Error('Programmlogik konnte nicht geladen werden: '+response.status);
-  let source=await response.text();
-  source=source.replace("stateKey=`wordscribble-swedish-v09-${difficulty}-${N}`","stateKey=`wordscribble-swedish-v091-${difficulty}-${N}`");
-  source=source.replace("const entry={id,word:obj.word,clue:obj.clue,dir:slot.dir,clue:slot.clue,answer:slot.answer};","const entry={id,word:obj.word,clue:obj.clue,dir:slot.dir,clueCell:slot.clue,answer:slot.answer};");
-  source=source.replace("function escapeHtml(s){return s.replace","function escapeHtml(s){return String(s??'').replace");
-  (0,eval)(source);
- }catch(error){
-  document.getElementById('status').textContent='Fehler: '+(error.message||error);
- }
-})();
-</script>
+ <section class="card puzzle-card">
+  <div class="puzzle-head"><div><strong id="title">Rätsel wird erzeugt …</strong><div class="status" id="status">Wortlisten werden geladen.</div></div><div><div class="progress"><span id="progressBar"></span></div><div class="status" id="progressText">0 %</div></div></div>
+  <div class="grid-scroll"><div class="grid" id="grid" aria-label="Schwedenrätsel"></div></div>
+ </section>
+ <aside class="side">
+  <section class="card input-card">
+   <div class="section-title"><h2>Lösung eingeben</h2><span class="badge" id="directionBadge">→ Waagerecht</span></div>
+   <div class="current" id="currentClue">Wähle im Raster ein Frage- oder Buchstabenfeld.</div>
+   <div class="scribble"><span class="recognition-state" id="recognitionState">Apple Kritzeln</span><textarea id="wordInput" rows="1" inputmode="text" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false" placeholder="Ganzes Lösungswort schreiben"></textarea></div>
+   <div class="help">Mit dem Apple Pencil das ganze Wort schreiben. Alternativ einzelne Buchstaben über Tastatur oder Bildschirmtasten eingeben.</div>
+   <div class="keyboard" id="keyboard"></div>
+   <div class="actions"><button class="btn" id="eraseWord">Wort löschen</button><button class="btn" id="nextWord">Nächste Frage</button></div>
+  </section>
+  <section class="card info-card">
+   <div class="section-title"><h2>Vernetztes Raster</h2><span class="badge" id="densityBadge">Kreuzungen</span></div>
+   <p>Waagerechte und senkrechte Begriffe überschneiden sich deutlich häufiger. Dadurch geben bereits gelöste Wörter Buchstaben für schwierigere Begriffe vor.</p>
+   <div id="resultBanner" class="result-banner" hidden></div>
+   <div class="legend"><span><i class="swatch clue"></i>Frage</span><span><i class="swatch"></i>Lösung</span><span><i class="swatch word"></i>Aktuelles Wort</span></div>
+  </section>
+ </aside>
+</main>
+</div>
+<div class="toast" id="toast"></div>
+<div class="modal" id="winModal"><div class="modal-box"><h2>Alles richtig 🎉</h2><p>Das Schwedenrätsel ist vollständig und fehlerfrei gelöst.</p><div class="modal-actions"><button class="btn" id="closeWin">Schließen</button><button class="btn primary" id="newAfterWin">Neues Rätsel</button></div></div></div>
+<script src="./play-v10.js?v=10"></script>
 </body>
 </html>
