@@ -1,6 +1,8 @@
 {
-  "easy": 475,
-  "medium": 740,
-  "hard": 569,
-  "total": 1784
+  "combinations": 15000,
+  "unique_words": 12000,
+  "easy_combinations": 5018,
+  "medium_combinations": 8261,
+  "hard_combinations": 1721,
+  "source": "WordScribble + OpenThesaurus + FrequencyWords"
 }
