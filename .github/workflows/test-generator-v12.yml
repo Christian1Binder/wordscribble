@@ -4,6 +4,7 @@ on:
   push:
     paths:
       - "generator-v12.js"
+      - "play-v12.js"
       - "tools/test_generator_v12.mjs"
       - "words-easy.json"
       - "words-medium.json"
@@ -12,7 +13,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: wordscribble-generator-v12-tests
@@ -20,16 +21,16 @@ concurrency:
 
 jobs:
   test:
+    name: Validate all grid sizes
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
+
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+        uses: actions/checkout@v5
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: "22"
 
@@ -40,30 +41,13 @@ jobs:
           node --check tools/test_generator_v12.mjs
 
       - name: Generate and validate every grid size
-        id: generator_test
-        run: |
-          set +e
-          node tools/test_generator_v12.mjs > generator-test-output.txt 2>&1
-          code=$?
-          cat generator-test-output.txt
-          echo "exit_code=$code" >> "$GITHUB_OUTPUT"
-          exit 0
+        run: node tools/test_generator_v12.mjs
 
-      - name: Commit test report or diagnostics
+      - name: Show density report
+        if: always()
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add generator-test-output.txt
           if [ -f generator-test-results.json ]; then
-            git add generator-test-results.json
-          fi
-          if git diff --cached --quiet; then
-            echo "Generator report unchanged."
+            cat generator-test-results.json
           else
-            git commit -m "Validate dense generator with quality-filtered bank"
-            git push
+            echo "No density report was created because the generator test stopped early."
           fi
-
-      - name: Fail workflow after preserving diagnostics
-        if: steps.generator_test.outputs.exit_code != '0'
-        run: exit 1
