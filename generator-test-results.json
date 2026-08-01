@@ -1,44 +1,44 @@
 {
-  "testedAt": "2026-08-01T04:17:07.090Z",
+  "testedAt": "2026-08-01T04:20:41.635Z",
   "wordRows": 15000,
   "uniqueWords": 12000,
   "generatorVersion": 12,
   "results": [
     {
       "size": "9x9",
-      "entries": 16,
-      "answerCells": 47,
-      "crossings": 33,
-      "crossingRatePercent": 70.2,
-      "verticalEntries": 8,
-      "elapsedMs": 2466
+      "entries": 18,
+      "answerCells": 49,
+      "crossings": 28,
+      "crossingRatePercent": 57.1,
+      "verticalEntries": 7,
+      "elapsedMs": 5000
     },
     {
       "size": "11x11",
-      "entries": 36,
-      "answerCells": 84,
-      "crossings": 54,
-      "crossingRatePercent": 64.3,
-      "verticalEntries": 18,
-      "elapsedMs": 4836
+      "entries": 31,
+      "answerCells": 75,
+      "crossings": 41,
+      "crossingRatePercent": 54.7,
+      "verticalEntries": 11,
+      "elapsedMs": 267
     },
     {
       "size": "13x13",
-      "entries": 54,
-      "answerCells": 126,
-      "crossings": 82,
-      "crossingRatePercent": 65.1,
-      "verticalEntries": 27,
-      "elapsedMs": 6770
+      "entries": 41,
+      "answerCells": 118,
+      "crossings": 67,
+      "crossingRatePercent": 56.8,
+      "verticalEntries": 15,
+      "elapsedMs": 2821
     },
     {
       "size": "15x15",
-      "entries": 43,
-      "answerCells": 190,
-      "crossings": 58,
-      "crossingRatePercent": 30.5,
-      "verticalEntries": 8,
-      "elapsedMs": 9332
+      "entries": 55,
+      "answerCells": 162,
+      "crossings": 91,
+      "crossingRatePercent": 56.2,
+      "verticalEntries": 19,
+      "elapsedMs": 10909
     }
   ]
 }
