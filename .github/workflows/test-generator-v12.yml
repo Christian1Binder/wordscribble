@@ -1,0 +1,55 @@
+name: Test Dense Generator v12
+
+on:
+  push:
+    paths:
+      - "generator-v12.js"
+      - "tools/test_generator_v12.mjs"
+      - "words-easy.json"
+      - "words-medium.json"
+      - "words-hard.json"
+      - ".github/workflows/test-generator-v12.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: wordscribble-generator-v12-tests
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Check JavaScript syntax
+        run: |
+          node --check generator-v12.js
+          node --check play-v12.js
+          node --check tools/test_generator_v12.mjs
+
+      - name: Generate and validate every grid size
+        run: node tools/test_generator_v12.mjs
+
+      - name: Commit density report
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add generator-test-results.json
+          if git diff --cached --quiet; then
+            echo "Generator report unchanged."
+          else
+            git commit -m "Validate dense generator with 15000 questions"
+            git push
+          fi
