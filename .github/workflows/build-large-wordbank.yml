@@ -1,0 +1,59 @@
+name: Build Large Word Bank
+
+on:
+  push:
+    paths:
+      - "tools/build_large_wordbank.py"
+      - ".github/workflows/build-large-wordbank.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: wordscribble-large-wordbank
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Build 15,000 question-answer combinations
+        run: python tools/build_large_wordbank.py
+
+      - name: Validate generated JSON
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          stats = json.loads(Path('wordlist-stats.json').read_text(encoding='utf-8'))
+          assert stats['combinations'] == 15000, stats
+          assert stats['unique_words'] >= 10000, stats
+          for level in ('easy', 'medium', 'hard'):
+              data = json.loads(Path(f'words-{level}.json').read_text(encoding='utf-8'))
+              assert data and all(isinstance(x, list) and len(x) == 2 for x in data)
+          print(stats)
+          PY
+
+      - name: Commit generated word bank
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add words-easy.json words-medium.json words-hard.json wordlist-stats.json
+          if git diff --cached --quiet; then
+            echo "Word bank is already current."
+          else
+            git commit -m "Build 15000-question crossword bank"
+            git push
+          fi
