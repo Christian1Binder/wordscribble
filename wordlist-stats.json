@@ -1,8 +1,9 @@
 {
   "combinations": 15000,
   "unique_words": 12000,
-  "easy_combinations": 5018,
-  "medium_combinations": 8261,
-  "hard_combinations": 1721,
-  "source": "WordScribble + OpenThesaurus + FrequencyWords"
+  "easy_combinations": 4219,
+  "medium_combinations": 8876,
+  "hard_combinations": 1905,
+  "source": "WordScribble + OpenThesaurus + FrequencyWords",
+  "quality_filter": "v2: no imported short forms, stopwords, acronyms or marked slang"
 }
