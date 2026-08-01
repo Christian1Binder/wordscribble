@@ -1,0 +1,51 @@
+name: Apply Dense Generator Upgrade
+
+on:
+  push:
+    paths:
+      - "tools/upgrade_dense_generator_v12.py"
+      - ".github/workflows/apply-generator-upgrade.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  upgrade-and-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Apply density upgrade
+        run: python tools/upgrade_dense_generator_v12.py
+
+      - name: Check and test upgraded generator
+        run: |
+          node --check generator-v12.js
+          node tools/test_generator_v12.mjs | tee generator-test-output.txt
+
+      - name: Commit upgraded generator and verified report
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add generator-v12.js generator-test-results.json generator-test-output.txt
+          if git diff --cached --quiet; then
+            echo "Upgrade already applied."
+          else
+            git commit -m "Improve crossing density on large grids"
+            git push
+          fi
