@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import vm from 'node:vm';
 import { performance } from 'node:perf_hooks';
 
+// This test is intentionally rerun after every finalized word-bank build.
 const levels = ['easy', 'medium', 'hard'];
 const rows = [];
 for (const level of levels) {
