@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
-"""Build the 15,000-entry German WordScribble question bank.
+"""Build the quality-filtered 15,000-entry German WordScribble bank.
 
-The existing editorial WordScribble questions are preserved. Additional
-question-answer combinations are created from synonym groups in the current
-OpenThesaurus text export and ranked with the FrequencyWords German list.
-Both data sources are openly licensed and documented in DATA_SOURCES.md.
+Editorial WordScribble questions are preserved. Automatically generated
+synonym questions are rebuilt from the current OpenThesaurus text export and
+ranked with the FrequencyWords German list. Generated entries from an older
+run are deliberately discarded before rebuilding, so quality filters can be
+improved without accumulating stale data.
 """
 
 from __future__ import annotations
@@ -29,9 +30,23 @@ FREQUENCY_URL = (
 )
 USER_AGENT = "WordScribble/0.12 (word-bank builder; GitHub Pages project)"
 SPACE = re.compile(r"\s+")
-TRAILING_TAG = re.compile(r"\s+(?:\([^)]{1,35}\)|\[[^]]{1,35}\])\s*$")
+TRAILING_TAG = re.compile(r"\s+(?:\([^)]{1,45}\)|\[[^]]{1,45}\])\s*$")
 LEADING_ARTICLE = re.compile(r"^\s*\((?:der|die|das)\)\s*", re.IGNORECASE)
 INVALID_TERM = re.compile(r"[\s\-–—/'’.:,;!?+&@0-9]")
+AUTO_PREFIXES = (
+    "Anderes Wort für „",
+    "Welcher Ausdruck bedeutet auch „",
+    "Synonym zu „",
+)
+STOPWORDS = {
+    "ABER","ALLE","ALLEM","ALLEN","ALLER","ALLES","ALS","ALSO","AM","AN","ANDERE","ANDEREM","ANDEREN","ANDERER","ANDERES","AUCH","AUF","AUS","BEI","BIN","BIS","BIST","DA","DAMIT","DANN","DAS","DASS","DEIN","DEINE","DEM","DEN","DENN","DER","DES","DIE","DIES","DIESE","DIESEM","DIESEN","DIESER","DIESES","DOCH","DORT","DU","DURCH","EIN","EINE","EINEM","EINEN","EINER","EINES","ER","ES","ETWAS","FUER","GEGEN","GEWESEN","HABEN","HAT","HIER","HIN","HINTER","ICH","IHM","IHN","IHNEN","IHR","IHRE","IM","IN","IST","JA","JEDE","JEDEM","JEDEN","JEDER","JEDES","JENER","JENES","JETZT","KANN","KEIN","KEINE","MIT","MUSS","NACH","NEIN","NICHT","NICHTS","NOCH","NUN","NUR","OB","ODER","OHNE","SEHR","SEIN","SEINE","SELBST","SICH","SIE","SIND","SO","SOLCHE","SOLCHER","UM","UND","UNS","UNSER","UNTER","VOM","VON","VOR","WAR","WAREN","WARUM","WAS","WEG","WEIL","WEITER","WELCHE","WELCHER","WELCHES","WENN","WER","WERDE","WERDEN","WIE","WIEDER","WIR","WO","ZU","ZUM","ZUR","ZWISCHEN",
+}
+LOW_QUALITY_TAG = re.compile(
+    r"\((?:ugs\.?|salopp|vulg\.?|derb|veraltet|regional|dialektal|abwertend|"
+    r"scherzhaft|ironisch|engl\.?|amerik\.?|kurzform|abk\.?|österr\.?|"
+    r"schweiz\.?|landschaftlich|jugendsprache)[^)]*\)",
+    re.IGNORECASE,
+)
 
 
 def request(url: str):
@@ -52,9 +67,13 @@ def normalize_word(value: object) -> str:
     return re.sub(r"[^A-Z]", "", text)
 
 
-def clean_surface(value: object) -> str:
+def clean_surface(value: object, *, allow_short: bool = False) -> str:
     text = str(value or "").replace("_", " ").strip()
     text = LEADING_ARTICLE.sub("", text)
+    if LOW_QUALITY_TAG.search(text):
+        return ""
+    # Neutral grammatical tags are stripped; stylistic/colloquial tags above
+    # cause the term to be rejected entirely.
     while True:
         cleaned = TRAILING_TAG.sub("", text).strip()
         if cleaned == text:
@@ -64,16 +83,19 @@ def clean_surface(value: object) -> str:
     if not text or INVALID_TERM.search(text):
         return ""
     word = normalize_word(text)
-    if not 3 <= len(word) <= 14:
+    minimum = 3 if allow_short else 4
+    if not minimum <= len(word) <= 14 or word in STOPWORDS:
         return ""
-    # Reject strings whose normalization removed more than umlaut/ß expansion.
     letters = re.sub(r"[^A-Za-zÄÖÜäöüßẞ]", "", text)
     if not letters or abs(len(word) - len(letters)) > 3:
+        return ""
+    # Automatically imported acronyms and chat abbreviations are poor clues.
+    if len(letters) <= 6 and letters.isupper():
         return ""
     return text
 
 
-def read_curated() -> tuple[dict[str, list[list[str]]], set[tuple[str, str]], set[str]]:
+def read_editorial() -> tuple[dict[str, list[list[str]]], set[tuple[str, str]], set[str]]:
     output: dict[str, list[list[str]]] = {level: [] for level in LEVELS}
     seen_pairs: set[tuple[str, str]] = set()
     words: set[str] = set()
@@ -87,6 +109,8 @@ def read_curated() -> tuple[dict[str, list[list[str]]], set[tuple[str, str]], se
                 continue
             word = normalize_word(item[0])
             clue = SPACE.sub(" ", str(item[1]).strip())
+            if clue.startswith(AUTO_PREFIXES):
+                continue
             pair = (word, clue)
             if 3 <= len(word) <= 14 and clue and pair not in seen_pairs:
                 output[level].append([word, clue])
@@ -103,11 +127,10 @@ def load_frequency() -> dict[str, int]:
                 surface = raw.decode("utf-8").split(" ", 1)[0].strip()
             except UnicodeDecodeError:
                 continue
-            cleaned = clean_surface(surface)
-            if not cleaned:
-                continue
-            ranks.setdefault(normalize_word(cleaned), rank)
-    if len(ranks) < 20_000:
+            cleaned = clean_surface(surface, allow_short=True)
+            if cleaned:
+                ranks.setdefault(normalize_word(cleaned), rank)
+    if len(ranks) < 18_000:
         raise RuntimeError(f"Frequency list unexpectedly small: {len(ranks)}")
     return ranks
 
@@ -141,7 +164,7 @@ def load_synonym_groups() -> list[list[tuple[str, str]]]:
             terms.append((word, surface))
         if len(terms) >= 2:
             groups.append(terms)
-    if len(groups) < 10_000:
+    if len(groups) < 8_000:
         raise RuntimeError(f"Too few usable synonym groups: {len(groups)}")
     return groups
 
@@ -150,7 +173,7 @@ def classify(word: str, clue_word: str, ranks: dict[str, int]) -> str:
     rank = ranks.get(word, 999_999)
     clue_rank = ranks.get(clue_word, 999_999)
     length = len(word)
-    if rank <= 12_000 and clue_rank <= 20_000 and length <= 8:
+    if rank <= 12_000 and clue_rank <= 22_000 and length <= 8:
         return "easy"
     if rank <= 45_000 and length <= 11:
         return "medium"
@@ -166,7 +189,7 @@ def question_for(surface: str, variant: int) -> str:
 
 
 def build() -> tuple[dict[str, list[list[str]]], dict[str, int]]:
-    output, seen_pairs, selected_words = read_curated()
+    output, seen_pairs, selected_words = read_editorial()
     ranks = load_frequency()
     groups = load_synonym_groups()
 
@@ -174,12 +197,14 @@ def build() -> tuple[dict[str, list[list[str]]], dict[str, int]]:
     for group in groups:
         ordered = sorted(group, key=lambda item: (ranks.get(item[0], 999_999), len(item[0]), item[0]))
         for answer_word, _answer_surface in ordered:
+            if answer_word in STOPWORDS:
+                continue
             for synonym_word, synonym_surface in ordered:
-                if synonym_word == answer_word:
+                if synonym_word == answer_word or synonym_word in STOPWORDS:
                     continue
                 if all(existing[0] != synonym_word for existing in candidates[answer_word]):
                     candidates[answer_word].append((synonym_word, synonym_surface, ranks.get(synonym_word, 999_999)))
-                if len(candidates[answer_word]) >= 8:
+                if len(candidates[answer_word]) >= 6:
                     break
 
     ranked_answers = sorted(
@@ -193,8 +218,6 @@ def build() -> tuple[dict[str, list[list[str]]], dict[str, int]]:
     )
 
     additions: list[tuple[str, list[str], int, int]] = []
-
-    # First pass: maximize the number of distinct answer words.
     for answer_word in ranked_answers:
         if len(selected_words) >= TARGET_UNIQUE:
             break
@@ -212,18 +235,18 @@ def build() -> tuple[dict[str, list[list[str]]], dict[str, int]]:
 
     if len(selected_words) < TARGET_UNIQUE:
         raise RuntimeError(
-            f"Only {len(selected_words)} distinct answer words could be built; "
+            f"Only {len(selected_words)} distinct quality-filtered words could be built; "
             f"required {TARGET_UNIQUE}"
         )
 
-    # Second pass: add alternative synonym clues until exactly 15,000 pairs exist.
     for variant in (0, 1, 2):
         if len(seen_pairs) >= TARGET_COMBINATIONS:
             break
         for answer_word in ranked_answers:
             if len(seen_pairs) >= TARGET_COMBINATIONS:
                 break
-            for synonym_word, synonym_surface, synonym_rank in candidates[answer_word][1 if variant == 0 else 0 :]:
+            start = 1 if variant == 0 else 0
+            for synonym_word, synonym_surface, synonym_rank in candidates[answer_word][start:]:
                 clue = question_for(synonym_surface, variant)
                 pair = (answer_word, clue)
                 if pair in seen_pairs:
@@ -236,11 +259,10 @@ def build() -> tuple[dict[str, list[list[str]]], dict[str, int]]:
 
     if len(seen_pairs) < TARGET_COMBINATIONS:
         raise RuntimeError(
-            f"Only {len(seen_pairs)} question-answer combinations could be built; "
+            f"Only {len(seen_pairs)} quality-filtered combinations could be built; "
             f"required {TARGET_COMBINATIONS}"
         )
 
-    # Keep the original entries and select the strongest additions deterministically.
     original_count = sum(len(entries) for entries in output.values())
     budget = TARGET_COMBINATIONS - original_count
     additions.sort(key=lambda item: (item[2], item[3], len(item[1][0]), item[1][0], item[1][1]))
@@ -262,6 +284,7 @@ def build() -> tuple[dict[str, list[list[str]]], dict[str, int]]:
         "medium_combinations": len(output["medium"]),
         "hard_combinations": len(output["hard"]),
         "source": "WordScribble + OpenThesaurus + FrequencyWords",
+        "quality_filter": "v2: no imported short forms, stopwords, acronyms or marked slang",
     }
     return output, stats
 
