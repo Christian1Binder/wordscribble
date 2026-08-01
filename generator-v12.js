@@ -153,6 +153,75 @@ function buildLayout(N, lexicon, random) {
   return { cells, slots };
 }
 
+function buildDenseLayout(N, lexicon, random) {
+  const candidates = [];
+  for (let period = 4; period <= Math.min(7, N - 1); period++) {
+    for (let shift = 1; shift < period; shift++) {
+      for (let offset = 0; offset < period; offset++) {
+        const clue = Array.from({ length: N }, (_, r) =>
+          Array.from({ length: N }, (_, c) => (r + shift * c + offset) % period === 0)
+        );
+        let across = [];
+        let down = [];
+        let membership = new Map();
+        for (let pass = 0; pass < 8; pass++) {
+          across = [];
+          down = [];
+          membership = new Map();
+          for (let r = 0; r < N; r++) {
+            for (let c = 0; c < N; c++) {
+              if (!clue[r][c]) continue;
+              let answer = [];
+              for (let cc = c + 1; cc < N && !clue[r][cc]; cc++) answer.push({ r, c: cc });
+              if (answer.length >= 3 && lexicon.byLen.has(answer.length) && lexicon.byLen.get(answer.length).length >= 25) {
+                across.push({ dir: 'across', clueCell: { r, c }, answer, length: answer.length });
+              }
+              answer = [];
+              for (let rr = r + 1; rr < N && !clue[rr][c]; rr++) answer.push({ r: rr, c });
+              if (answer.length >= 3 && lexicon.byLen.has(answer.length) && lexicon.byLen.get(answer.length).length >= 25) {
+                down.push({ dir: 'down', clueCell: { r, c }, answer, length: answer.length });
+              }
+            }
+          }
+          for (const slot of [...across, ...down]) {
+            for (const point of slot.answer) {
+              const key = keyOf(point);
+              membership.set(key, (membership.get(key) || 0) + 1);
+            }
+          }
+          const uncovered = [];
+          for (let r = 0; r < N; r++) {
+            for (let c = 0; c < N; c++) {
+              if (!clue[r][c] && !membership.has(`${r},${c}`)) uncovered.push({ r, c });
+            }
+          }
+          if (!uncovered.length) break;
+          for (const point of uncovered) clue[point.r][point.c] = true;
+        }
+        const cells = Array.from({ length: N }, (_, r) =>
+          Array.from({ length: N }, (_, c) =>
+            clue[r][c]
+              ? { kind: 'clue', entries: [] }
+              : { kind: 'answer', entries: [], solution: '', fillCount: 0 }
+          )
+        );
+        const answerCells = N * N - clue.flat().filter(Boolean).length;
+        const coverage = answerCells ? membership.size / answerCells : 0;
+        const crossings = [...membership.values()].filter(count => count > 1).length;
+        const crossingRate = answerCells ? crossings / answerCells : 0;
+        if (coverage === 1 && across.length >= Math.max(6, N - 2) && down.length >= Math.max(6, N - 2)) {
+          const clueCells = N * N - answerCells;
+          const score = crossingRate * 260 + crossings * 1.4 + (across.length + down.length) * 1.7 - clueCells * 0.18 + random() * 5;
+          candidates.push({ layout: { cells, slots: across }, down, score, crossingRate });
+        }
+      }
+    }
+  }
+  candidates.sort((a, b) => b.score - a.score);
+  if (!candidates.length) return null;
+  return candidates[Math.floor(random() * Math.min(8, candidates.length))];
+}
+
 function verticalCandidates(layout, lexicon, N) {
   const output = [];
   for (let r = 0; r < N - 3; r++) {
@@ -286,7 +355,8 @@ function solveLayout(layout, verticalSlots, lexicon, difficulty, random, deadlin
       candidates.push({ entry, score: levelPenalty + recentPenalty - futureScore * 5 + random() * 3 });
     }
     candidates.sort((a, b) => a.score - b.score);
-    return candidates.slice(0, 110).map(item => item.entry);
+    const emptyPattern = !pattern.replace(/\./g, '');
+    return candidates.slice(0, emptyPattern ? 190 : 145).map(item => item.entry);
   }
 
   function assign(slot, entry) {
@@ -322,7 +392,7 @@ function solveLayout(layout, verticalSlots, lexicon, difficulty, random, deadlin
       const list = candidatesFor(slot);
       if (!list.length) return false;
       const fixed = slot.answer.reduce((count, point) => count + Number(Boolean(layout.cells[point.r][point.c].solution)), 0);
-      const metric = list.length * 100 - fixed * 24 - slot.degree * 5;
+      const metric = list.length * 10 - fixed * 260 - slot.degree * 95 - (slot.dir === 'down' ? 35 : 0);
       if (metric < bestMetric) {
         bestMetric = metric;
         bestSlot = slot;
@@ -387,59 +457,71 @@ function generate(message) {
   const random = mulberry32(seed);
   const avoidWords = new Set((message.avoidWords || []).map(clean));
 
-  notify('Wortschatz', 4, 'Fragen und Begriffe werden sortiert');
+  notify('Wortschatz', 4, 'Fragen und Begriffe werden nach Wortlänge sortiert');
   const lexicon = buildLexicon(message.rows || [], difficulty, avoidWords);
   if (lexicon.words.length < 500) throw new Error('Der Wortschatz ist zu klein.');
 
-  const totalBudget = N >= 15 ? 5200 : N >= 13 ? 4400 : 3600;
+  const totalBudget = N >= 15 ? 9000 : N >= 13 ? 7000 : N >= 11 ? 5200 : 4200;
   const started = performance.now();
   const finalDeadline = started + totalBudget;
   let best = null;
   let bestScore = -Infinity;
   let attempts = 0;
-  const desired = Math.max(6, Math.round(N * 1.2));
-  const minimum = Math.max(4, Math.round(N * 0.72));
+  const maxAttempts = N >= 15 ? 44 : N >= 13 ? 40 : 34;
 
-  for (let target = desired; target >= minimum && performance.now() < finalDeadline; target--) {
-    const attemptsForTarget = N >= 15 ? 8 : 11;
-    for (let index = 0; index < attemptsForTarget && performance.now() < finalDeadline; index++) {
-      if (cancelled) throw new Error('Erzeugung abgebrochen.');
-      attempts++;
-      const elapsed = performance.now() - started;
-      notify('Kreuzungen', 10 + (elapsed / totalBudget) * 82, `${target} senkrechte Wörter werden geprüft`);
-      const layout = buildLayout(N, lexicon, random);
-      const candidates = verticalCandidates(layout, lexicon, N);
-      const vertical = chooseVerticalSlots(layout, shuffle(candidates.slice(), random), target, difficulty, random);
-      if (vertical.length < Math.min(target, minimum)) continue;
-      const solveDeadline = Math.min(finalDeadline, performance.now() + (N >= 15 ? 760 : 590));
-      const puzzle = solveLayout(layout, vertical, lexicon, difficulty, random, solveDeadline);
-      if (!puzzle) continue;
-      const score = scorePuzzle(puzzle);
-      if (score > bestScore) {
-        best = puzzle;
-        bestScore = score;
-        notify('Bestes Raster', 91, `${Math.round(puzzle.crossingRate * 100)} % der Lösungsfelder sind gekreuzt`);
-      }
-      const targetRate = difficulty === 'easy' ? 0.43 : 0.5;
-      if (puzzle.crossingRate >= targetRate && puzzle.verticalCount >= Math.max(minimum, target - 1)) {
-        notify('Fertig', 100, `${puzzle.crossings} Kreuzungen gefunden`);
-        return puzzle;
-      }
+  notify('Dichtes Grundmuster', 8, 'Waagerechte und senkrechte Wortwege werden gemeinsam geplant');
+  while (attempts < maxAttempts && performance.now() < finalDeadline) {
+    if (cancelled) throw new Error('Erzeugung abgebrochen.');
+    attempts++;
+    const elapsed = performance.now() - started;
+    const dense = buildDenseLayout(N, lexicon, random);
+    if (!dense) continue;
+    notify('Kreuzungen', 10 + (elapsed / totalBudget) * 82, `Rastervariante ${attempts} wird mit Wörtern gefüllt`);
+    const perAttempt = N >= 15 ? 2100 : N >= 13 ? 1750 : N >= 11 ? 1350 : 1050;
+    const puzzle = solveLayout(
+      dense.layout,
+      dense.down,
+      lexicon,
+      difficulty,
+      random,
+      Math.min(finalDeadline, performance.now() + perAttempt)
+    );
+    if (!puzzle) continue;
+    const score = scorePuzzle(puzzle);
+    if (score > bestScore) {
+      best = puzzle;
+      bestScore = score;
+      notify('Bestes Raster', 92, `${Math.round(puzzle.crossingRate * 100)} % der Lösungsfelder sind echte Kreuzungen`);
+    }
+    const targetRate = N >= 13 ? 0.56 : 0.5;
+    if (puzzle.crossingRate >= targetRate && puzzle.verticalCount >= Math.max(8, N - 2)) {
+      notify('Fertig', 100, `${puzzle.crossings} Kreuzungsfelder und ${puzzle.verticalCount} senkrechte Wörter`);
+      return puzzle;
     }
   }
 
   if (!best) {
-    for (let target = minimum - 1; target >= 2 && !best; target--) {
-      for (let index = 0; index < 7 && !best; index++) {
+    notify('Alternative Anordnung', 93, 'Eine robuste Rastervariante wird aufgebaut');
+    const desired = Math.max(6, Math.round(N * 1.05));
+    for (let target = desired; target >= 3 && performance.now() < finalDeadline + 2600; target--) {
+      for (let attempt = 0; attempt < 8; attempt++) {
         const layout = buildLayout(N, lexicon, random);
         const vertical = chooseVerticalSlots(layout, verticalCandidates(layout, lexicon, N), target, difficulty, random);
+        if (vertical.length < Math.min(target, 3)) continue;
         const puzzle = solveLayout(layout, vertical, lexicon, difficulty, random, performance.now() + 900);
-        if (puzzle) best = puzzle;
+        if (!puzzle) continue;
+        const score = scorePuzzle(puzzle);
+        if (score > bestScore) {
+          best = puzzle;
+          bestScore = score;
+        }
+        if (puzzle.crossingRate >= 0.3) break;
       }
+      if (best) break;
     }
   }
 
-  if (!best) throw new Error('Es konnte kein dichtes Raster erzeugt werden. Bitte erneut versuchen.');
-  notify('Fertig', 100, `${best.crossings} Kreuzungen in ${attempts} Varianten`);
+  if (!best) throw new Error('Es konnte kein gültiges Raster erzeugt werden. Bitte erneut versuchen.');
+  notify('Fertig', 100, `${best.crossings} Kreuzungsfelder in der besten Variante`);
   return best;
 }
