@@ -1,0 +1,12 @@
+file:///home/runner/work/wordscribble/wordscribble/tools/test_generator_v12.mjs:93
+  if (rate < minimum) throw new Error(`${size}: crossing rate ${(rate * 100).toFixed(1)}% below ${(minimum * 100).toFixed(0)}%`);
+                            ^
+
+Error: 9: crossing rate 15.2% below 25%
+    at validate (file:///home/runner/work/wordscribble/wordscribble/tools/test_generator_v12.mjs:93:29)
+    at file:///home/runner/work/wordscribble/wordscribble/tools/test_generator_v12.mjs:104:23
+    at ModuleJob.run (node:internal/modules/esm/module_job:343:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:681:26)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:117:5)
+
+Node.js v22.23.1
