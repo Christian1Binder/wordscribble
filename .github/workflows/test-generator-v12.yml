@@ -40,16 +40,30 @@ jobs:
           node --check tools/test_generator_v12.mjs
 
       - name: Generate and validate every grid size
-        run: node tools/test_generator_v12.mjs
+        id: generator_test
+        run: |
+          set +e
+          node tools/test_generator_v12.mjs > generator-test-output.txt 2>&1
+          code=$?
+          cat generator-test-output.txt
+          echo "exit_code=$code" >> "$GITHUB_OUTPUT"
+          exit 0
 
-      - name: Commit density report
+      - name: Commit test report or diagnostics
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add generator-test-results.json
+          git add generator-test-output.txt
+          if [ -f generator-test-results.json ]; then
+            git add generator-test-results.json
+          fi
           if git diff --cached --quiet; then
             echo "Generator report unchanged."
           else
-            git commit -m "Validate dense generator with 15000 questions"
+            git commit -m "Validate dense generator with quality-filtered bank"
             git push
           fi
+
+      - name: Fail workflow after preserving diagnostics
+        if: steps.generator_test.outputs.exit_code != '0'
+        run: exit 1
